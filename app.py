@@ -6,6 +6,7 @@ from extensions import db
 from routes.user import user_bp
 from routes.product import product_bp
 from routes.auth import auth_bp
+from routes.order import order_bp
 import pymysql
 
 pymysql.install_as_MySQLdb()
@@ -31,6 +32,7 @@ def create_app():
     app.register_blueprint(user_bp, url_prefix='/users')
     app.register_blueprint(product_bp, url_prefix='/products')
     app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(order_bp, url_prefix='/orders')
     return app
 
 
