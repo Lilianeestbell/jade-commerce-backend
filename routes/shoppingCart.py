@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify
 from models.shoppingCart import Cart
+from flask import Blueprint, request, jsonify
 from models.product import Product
 from extensions import db
 
@@ -119,3 +119,24 @@ def clear_cart(user_id):
 
     db.session.commit()
     return jsonify({"message": "Cart cleared successfully"}), 200
+
+@cart_bp.route('/select-items', methods=['POST'])
+def select_cart_items():
+    data = request.get_json()
+    user_id = data.get('userId')
+    selected_item_ids = data.get('cartItemIds')
+
+    if not user_id or not selected_item_ids:
+        return jsonify({"error": "Missing userId or cartItemIds"}), 400
+
+    selected_items = Cart.query.filter(Cart.id.in_(selected_item_ids), Cart.user_id == user_id).all()
+    if not selected_items:
+        return jsonify({"error": "No valid items found in cart"}), 404
+
+    items = [{
+        "cartItemId": item.id,
+        "productId": item.product_id,
+        "quantity": item.quantity
+    } for item in selected_items]
+
+    return jsonify({"selectedItems": items}), 200
