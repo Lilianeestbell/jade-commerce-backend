@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.order import Order, OrderItem
 from models.product import Product
 from models.user import User
+from models.shoppingCart import Cart
 from extensions import db
 
 order_bp = Blueprint('orders', __name__)
@@ -32,33 +33,64 @@ def get_all_orders():
 @order_bp.route('/create', methods=['POST'])
 def create_order():
     data = request.get_json()
-    user_id = data.get('userId')  # 注意这里使用 userId
+    user_id = data.get('userId')
+    cart_item_ids = data.get('cartItemIds')
+    direct_items = data.get('current_items')
+
     if not user_id:
         return jsonify({"error": "Missing userId"}), 400
-
-    items = data.get('items')  # List of {"productId": int, "quantity": int}
-    if not items or not isinstance(items, list):
-        return jsonify({"error": "Invalid items format"}), 400
 
     total_price = 0
     order_items = []
 
-    for item in items:
-        product = Product.query.filter_by(id=item['productId'], is_deleted=False).first()
-        if not product:
-            return jsonify({"error": f"Product with ID {item['productId']} not found"}), 404
+    if cart_item_ids:
+        cart_items = Cart.query.filter(Cart.id.in_(cart_item_ids), Cart.user_id == user_id).all()
+        if not cart_items:
+            return jsonify({"error": "No valid cart items found"}), 404
 
-        quantity = item['quantity']
-        if quantity <= 0:
-            return jsonify({"error": "Quantity must be greater than 0"}), 400
+        for cart_item in cart_items:
+            product = Product.query.filter_by(id=cart_item.product_id, is_deleted=False).first()
+            if not product:
+                return jsonify({"error": f"Product with ID {cart_item.product_id} not found"}), 404
 
-        if quantity > product.stock:
-            return jsonify({"error": f"Insufficient stock for product ID {item['productId']}"}), 400
+            if cart_item.quantity > product.stock:
+                return jsonify({"error": f"Insufficient stock for product ID {cart_item.product_id}"}), 400
 
-        total_price += product.price * quantity
-        order_items.append(OrderItem(product_id=product.id, quantity=quantity, unit_price=product.price))
+            total_price += product.price * cart_item.quantity
+            order_items.append(OrderItem(
+                product_id=product.id,
+                quantity=cart_item.quantity,
+                unit_price=product.price
+            ))
+            product.stock -= cart_item.quantity
+        Cart.query.filter(Cart.id.in_(cart_item_ids), Cart.user_id == user_id).delete(synchronize_session=False)
 
-        product.stock -= quantity
+    elif direct_items:
+        for item in direct_items:
+            product_id = item.get('productId')
+            quantity = item.get('quantity')
+
+            if not product_id or not quantity:
+                return jsonify({"error": "Missing productId or quantity for direct order"}), 400
+
+            product = Product.query.filter_by(id=product_id, is_deleted=False).first()
+            if not product:
+                return jsonify({"error": f"Product with ID {product_id} not found"}), 404
+
+            if quantity > product.stock:
+                return jsonify({"error": f"Insufficient stock for product ID {product_id}"}), 400
+
+            total_price += product.price * quantity
+            order_items.append(OrderItem(
+                product_id=product.id,
+                quantity=quantity,
+                unit_price=product.price
+            ))
+
+            product.stock -= quantity
+
+    else:
+        return jsonify({"error": "Either cartItemIds or items must be provided"}), 400
 
     new_order = Order(user_id=user_id, total_price=total_price)
     db.session.add(new_order)
@@ -69,7 +101,6 @@ def create_order():
         db.session.add(order_item)
 
     db.session.commit()
-
     return jsonify({"message": "Order created successfully", "order": new_order.to_dict()}), 201
 
 # get order

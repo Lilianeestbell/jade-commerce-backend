@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.product import Product
 from extensions import db
 
-product_bp = Blueprint('product', __name__)
+product_bp = Blueprint('products', __name__)
 
 @product_bp.route('/all', methods=['GET'])
 def get_all_products():
@@ -31,7 +31,7 @@ def get_product(product_id):
         return jsonify({"error": "Product not found"}), 404
     return jsonify(product.to_dict()), 200
 
-@product_bp.route('/', methods=['POST'])
+@product_bp.route('/add', methods=['POST'])
 def add_product():
     data = request.get_json()
     if not data.get('name') or not data.get('price') or not data.get('stock'):
