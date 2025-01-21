@@ -3,3 +3,4 @@ class Config:
     JWT_SECRET_KEY = '75ca5abe26d94f859f1ea80e1b043918d6843ef779ebe19d75637812f9b70d96e'  # JWT 的密钥
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:free1997@localhost/jade_commerce'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_ACCESS_TOKEN_EXPIRES=3600
