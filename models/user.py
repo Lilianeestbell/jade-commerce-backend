@@ -5,6 +5,7 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(50), default="user")
     is_deleted = db.Column(db.Boolean, default=False)
 # define the to_dict method to return a dictionary representation of the User object
     def to_dict(self):
@@ -12,5 +13,8 @@ class User(db.Model):
             "id": self.id,
             "username": self.username,
             "email": self.email,
+            "role": self.role, 
             "is_deleted": self.is_deleted
         }
+    def is_admin(self):
+        return self.role == "admin"

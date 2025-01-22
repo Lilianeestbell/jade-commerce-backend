@@ -3,6 +3,7 @@ from models.user import User
 from extensions import db
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 user_bp = Blueprint('users', __name__)
 
@@ -81,7 +82,12 @@ def delete_user(user_id):
 
 # 更新用户信息
 @user_bp.route('/<int:user_id>', methods=['PUT'])
+@jwt_required()
 def update_user(user_id):
+    current_user = get_jwt_identity()
+    print("JWT Identity:", current_user)
+    if current_user["id"] != user_id:
+        return jsonify({"error": "Permission denied"}), 403
     data = request.get_json()
     user = User.query.filter_by(id=user_id, is_deleted=False).first()
     if not user:
@@ -92,7 +98,7 @@ def update_user(user_id):
     if 'email' in data:
         user.email = data['email']
     if 'password' in data:
-        user.password = data['password']
+        user.password = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
     db.session.commit()
     return jsonify({"message": "User updated successfully", "user": user.to_dict()}), 200
