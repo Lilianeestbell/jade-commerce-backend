@@ -27,8 +27,6 @@ def create_app():
     # 加载配置
     app.config.from_object(Config)
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://jade_user:your_password@localhost/jade_commerce'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False    # 初始化扩展
     db.init_app(app)
     migrate.init_app(app, db)  # 初始化数据库迁移
     jwt.init_app(app)  # 初始化 JWT
@@ -48,6 +46,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    with app.app_context():
-        db.create_all()  # 确保数据库表创建
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
