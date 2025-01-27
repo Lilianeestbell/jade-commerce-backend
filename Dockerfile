@@ -1,21 +1,32 @@
-FROM python:3.9-slim
-
-# 设置工作目录
+# Step 1: Build stage
+FROM python:3.9-slim as builder
 WORKDIR /app
 
-# 复制项目文件到容器
-COPY . /app
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --user -r requirements.txt
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# Step 2: Production stage
+FROM python:3.9-slim
+WORKDIR /app
 
-# 设置环境变量
+# Copy dependencies and source code
+COPY --from=builder /root/.local /root/.local
+COPY . .
+
+# Update PATH for locally installed packages
+ENV PATH=/root/.local/bin:$PATH
+
+# Set environment variables
 ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=5000
+ENV FLASK_ENV=production
 
-# 暴露端口
+# Expose the port
 EXPOSE 5000
 
-# 容器启动命令
-CMD ["flask", "run"]
+# ADD HEALTHCHECK
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:5000/ || exit 1
+
+# Start the Flask application
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
