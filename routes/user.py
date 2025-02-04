@@ -7,13 +7,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 user_bp = Blueprint('users', __name__)
 
-# 获取所有用户
+# get all users
 @user_bp.route('/all', methods=['GET'])
 def get_all_users():
     users = User.query.filter_by(is_deleted=False).all()
     return {"users": [user.to_dict() for user in users]}, 200
 
-# 获取用户（分页和搜索）
+# get all users with pagination
 @user_bp.route('/', methods=['GET'])
 def list_users():
     page = request.args.get('page', 1, type=int)
@@ -32,7 +32,7 @@ def list_users():
         "current_page": pagination.page
     }), 200
 
-# 获取单个用户
+# get user by id
 @user_bp.route('/<int:user_id>', methods=['GET'])
 def get_user(user_id):
     user = User.query.filter_by(id=user_id, is_deleted=False).first()
@@ -45,7 +45,7 @@ def get_user(user_id):
 def add_user():
     data = request.get_json()
 
-    # 验证请求数据
+    # verify required fields
     if not all(k in data for k in ("username", "email", "password")):
         return {"error": "Missing username, email, or password"}, 400
 
@@ -69,7 +69,7 @@ def add_user():
         return {"error": str(e)}, 500
 
 
-# 删除用户（逻辑删除）
+# delete user (soft delete)
 @user_bp.route('/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get(user_id)
@@ -80,7 +80,7 @@ def delete_user(user_id):
     db.session.commit()
     return {"message": f"User with id {user_id} has been logically deleted."}, 200
 
-# 更新用户信息
+# update user
 @user_bp.route('/<int:user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
@@ -104,25 +104,20 @@ def update_user(user_id):
     return jsonify({"message": "User updated successfully", "user": user.to_dict()}), 200
 
 # # user login
-# # 用户登录
 # @user_bp.route('/login', methods=['POST'])
 # def login():
 #     data = request.get_json()
 
-#     # 检查必填字段
 #     if not all(k in data for k in ("email", "password")):
 #         return jsonify({"error": "Missing email or password"}), 400
 
-#     # 根据邮箱查找用户
 #     user = User.query.filter_by(email=data['email'], is_deleted=False).first()
 #     if not user:
 #         return jsonify({"error": "User not found"}), 404
 
-#     # 验证密码
 #     if not check_password_hash(user.password, data['password']):
 #         return jsonify({"error": "Invalid password"}), 401
 
-#     # 登录成功，返回用户信息（这里可以生成 JWT Token）
 #     return jsonify({
 #         "message": "Login successful",
 #         "user": user.to_dict()

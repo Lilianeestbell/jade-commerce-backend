@@ -6,10 +6,10 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from utils.decorators import role_required
 
-# 确保当前目录在 Python 的模块搜索路径中
+# make sure the current directory is in the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# 从 config.py 导入配置类
+# import the necessary modules
 from config import Config
 from routes.user import user_bp
 from routes.product import product_bp
@@ -24,14 +24,14 @@ jwt = JWTManager()
 def create_app():
     app = Flask(__name__)
 
-    # 加载配置
+    # load the configuration from the Config class in config.py
     app.config.from_object(Config)
 
     db.init_app(app)
-    migrate.init_app(app, db)  # 初始化数据库迁移
-    jwt.init_app(app)  # 初始化 JWT
+    migrate.init_app(app, db)  # initialize the migration engine
+    jwt.init_app(app)  # initialize JWT
 
-    # 注册蓝图
+    # register the blueprints
     app.register_blueprint(user_bp, url_prefix='/users')
     app.register_blueprint(product_bp, url_prefix='/products')
     app.register_blueprint(auth_bp, url_prefix='/auth')

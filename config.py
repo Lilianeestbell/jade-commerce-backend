@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-# 加载 .env 文件
+# load the environment variables from the .env file
 load_dotenv()
 
 class Config:
